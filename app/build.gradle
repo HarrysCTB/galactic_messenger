@@ -41,6 +41,10 @@ jar {
     // Include the application's jar in the top level project.
     archiveFileName.set("galactic_messenger.jar")
     destinationDirectory.set(file("../"))
+
+    manifest {
+        attributes 'Main-Class': 'galactic_messenger.App'
+    }
 }
 
 clean {
