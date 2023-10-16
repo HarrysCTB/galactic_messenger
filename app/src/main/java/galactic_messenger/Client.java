@@ -1,38 +1,53 @@
+package galactic_messenger;
+
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.UnknownHostException;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.Socket;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.net.UnknownHostException;
 
+/**
+ * Client connection class for the galactic messenger.
+ * This class handles client-server connection and user interactions.
+ */
+public class Client {
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_BLUE = "\u001B[34m";
 
-public class ClientConnexion {
-
-    public boolean checkServerLogin(String MY_IP, int MY_PORT) {
-        // Codes d'échappement ANSI pour les couleurs
-        final String ANSI_RESET = "\u001B[0m";
-        final String ANSI_RED = "\u001B[31m";
-        final String ANSI_GREEN = "\u001B[32m";
-
-        try (Socket socket = new Socket(MY_IP, MY_PORT)) {
+    /**
+     * Check if the server is available and accept connections.
+     *
+     * @param serverIP   - IP address of the server
+     * @param serverPort - Port number to connect
+     * @return true if the connection is successful, false otherwise
+     */
+    public boolean checkServerLogin(String serverIP, int serverPort) {
+        try (Socket socket = new Socket(serverIP, serverPort)) {
             System.out.println(ANSI_GREEN + "CONNEXION SUCCESS" + ANSI_RESET);
             return true;
         } catch (UnknownHostException e) {
-            System.out.println(ANSI_RED + "Erreur: L'adresse IP est inconnue ou le nom d'hôte ne peut pas être résolu." + ANSI_RESET);
+            System.out.println(ANSI_RED + "Erreur: L'adresse IP est inconnue ou le nom d'hôte ne peut pas être résolu."
+                    + ANSI_RESET);
             return false;
         } catch (ConnectException e) {
-            System.out.println(ANSI_RED + "Erreur: Impossible de se connecter au serveur. Veuillez vérifier l'IP et le port." + ANSI_RESET);
+            System.out.println(ANSI_RED
+                    + "Erreur: Impossible de se connecter au serveur. Veuillez vérifier l'IP et le port." + ANSI_RESET);
             return false;
         } catch (IOException e) {
-            System.out.println(ANSI_RED + "Erreur: Un problème d'entrée/sortie s'est produit lors de la tentative de connexion." + ANSI_RESET);
+            System.out.println(
+                    ANSI_RED + "Erreur: Un problème d'entrée/sortie s'est produit lors de la tentative de connexion."
+                            + ANSI_RESET);
             return false;
         }
     }
 
+    /**
+     * Start a client session and handle user interactions.
+     */
     public void startClientSession() {
-        final String ANSI_RESET = "\u001B[0m";
-        final String ANSI_BLUE = "\u001B[34m";
-
         try (BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
                 System.out.print(ANSI_BLUE + "Entrez une commande (/register, /login, /help): " + ANSI_RESET);
@@ -60,12 +75,12 @@ public class ClientConnexion {
     }
 
     private void register() {
-        // Code pour gérer l'inscription
+        // Code to handle registration
         System.out.println("Fonction d'inscription à implémenter.");
     }
 
     private void login() {
-        // Code pour gérer la connexion
+        // Code to handle login
         System.out.println("Fonction de connexion à implémenter.");
     }
 
@@ -75,7 +90,6 @@ public class ClientConnexion {
         System.out.println("/help     : Afficher cette aide");
         System.out.println("/exit     : Quitter l'application");
     }
-
 
     public static void main(String[] args) {
         if (args.length < 2) {
@@ -92,10 +106,9 @@ public class ClientConnexion {
             return;
         }
 
-        ClientConnexion client = new ClientConnexion();
+        Client client = new Client();
         if (client.checkServerLogin(IP, PORT)) {
             client.startClientSession();
         }
     }
 }
-
