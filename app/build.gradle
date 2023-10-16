@@ -37,6 +37,17 @@ application {
     mainClass = 'galactic_messenger.App'
 }
 
+jar {
+    // Include the application's jar in the top level project.
+    archiveFileName.set("galactic_messenger.jar")
+    destinationDirectory.set(file("../"))
+}
+
+clean {
+    // Delete the application's jar from the top level project.
+    delete file("../galactic_messenger.jar")
+}
+
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
