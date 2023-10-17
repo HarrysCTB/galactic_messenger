@@ -90,20 +90,58 @@ public class Client {
             String username = userInput.readLine();
             out.println(username);
 
-            String command;
-            while (true) {
-                System.out.print("Entrez une commande: ");
-                command = userInput.readLine();
-                out.println(command);  // Send command to the server
+            String serverResponse;
+    String command;
+    while (true) {
+        System.out.print("Entrez une commande: ");
+        command = userInput.readLine();
+        out.println(command);  // Send command to the server
 
-                if ("/list".equalsIgnoreCase(command)) {
-                    System.out.println("Clients connectés: " + in.readLine());
+        switch (command.split(" ")[0].toLowerCase()) {
+            case "/list":
+                System.out.println("Clients connectés: " + in.readLine());
+                break;
+
+            case "/private_chat":
+                serverResponse = in.readLine();
+                System.out.println(serverResponse);
+                break;
+
+            case "/accept":
+                serverResponse = in.readLine();
+                if ("Chat privé démarré.".equals(serverResponse)) {
+                    startPrivateChat(in, out, userInput);
+                } else {
+                    System.out.println(serverResponse);
                 }
-                // Handle other commands as needed
-            }
+                break;
 
+            default:
+                System.out.println("Commande inconnue. Essayez /help pour voir les commandes disponibles.");
+        }
+    }
         } catch (IOException e) {
             System.out.println("Erreur lors de la communication avec le serveur.");
+        }
+    }
+
+    private void startPrivateChat(BufferedReader in, PrintWriter out, BufferedReader userInput) throws IOException {
+        System.out.println("Vous êtes maintenant en chat privé. Tapez /private_chat_exit pour quitter.");
+
+        String serverResponse;
+        String message;
+        while (true) {
+            System.out.print("Message privé: ");
+            message = userInput.readLine();
+            out.println(message);  // Envoyez le message au serveur pour qu'il le transmette à l'autre utilisateur
+
+            if ("/private_chat_exit".equalsIgnoreCase(message)) {
+                System.out.println("Vous avez quitté le chat privé.");
+                break;
+            } else {
+                serverResponse = in.readLine();  // Recevez un message de l'autre utilisateur dans le chat privé
+                System.out.println(serverResponse);
+            }
         }
     }
 
