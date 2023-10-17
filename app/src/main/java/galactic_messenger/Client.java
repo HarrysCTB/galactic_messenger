@@ -3,6 +3,7 @@ package galactic_messenger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -47,7 +48,7 @@ public class Client {
     /**
      * Start a client session and handle user interactions.
      */
-    public void startClientSession() {
+    public void startClientSession(String serverIP, int serverPort) {
         try (BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))) {
             while (true) {
                 System.out.print(ANSI_BLUE + "Entrez une commande (/register, /login, /help): " + ANSI_RESET);
@@ -58,7 +59,7 @@ public class Client {
                         register();
                         break;
                     case "/login":
-                        login();
+                        login(serverIP, serverPort);
                         break;
                     case "/help":
                         displayHelp();
@@ -79,9 +80,31 @@ public class Client {
         System.out.println("Fonction d'inscription à implémenter.");
     }
 
-    private void login() {
-        // Code to handle login
-        System.out.println("Fonction de connexion à implémenter.");
+    private void login(String serverIP, int serverPort) {
+        try (Socket socket = new Socket(serverIP, serverPort);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))) {
+
+            System.out.println(in.readLine());  // "Veuillez entrer votre nom d'utilisateur :"
+            String username = userInput.readLine();
+            out.println(username);
+
+            String command;
+            while (true) {
+                System.out.print("Entrez une commande: ");
+                command = userInput.readLine();
+                out.println(command);  // Send command to the server
+
+                if ("/list".equalsIgnoreCase(command)) {
+                    System.out.println("Clients connectés: " + in.readLine());
+                }
+                // Handle other commands as needed
+            }
+
+        } catch (IOException e) {
+            System.out.println("Erreur lors de la communication avec le serveur.");
+        }
     }
 
     private void displayHelp() {
@@ -108,7 +131,7 @@ public class Client {
 
         Client client = new Client();
         if (client.checkServerLogin(IP, PORT)) {
-            client.startClientSession();
+            client.startClientSession(IP, PORT);
         }
     }
 }
