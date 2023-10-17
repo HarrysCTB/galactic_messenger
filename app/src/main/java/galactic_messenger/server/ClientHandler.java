@@ -1,4 +1,4 @@
-package galactic_messenger;
+package galactic_messenger.server;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,19 +20,19 @@ public class ClientHandler extends Thread {
     @Override
     public void run() {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
 
             out.println("Veuillez entrer votre nom d'utilisateur :");
             username = in.readLine();
 
-            synchronized(connectedClients) {
+            synchronized (connectedClients) {
                 connectedClients.add(username);
             }
 
             String clientInput;
             while ((clientInput = in.readLine()) != null) {
                 if ("/list".equalsIgnoreCase(clientInput)) {
-                    synchronized(connectedClients) {
+                    synchronized (connectedClients) {
                         out.println(connectedClients.toString());
                     }
                 }
@@ -42,7 +42,7 @@ public class ClientHandler extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            synchronized(connectedClients) {
+            synchronized (connectedClients) {
                 connectedClients.remove(username);
             }
             try {
@@ -53,5 +53,3 @@ public class ClientHandler extends Thread {
         }
     }
 }
-
-
