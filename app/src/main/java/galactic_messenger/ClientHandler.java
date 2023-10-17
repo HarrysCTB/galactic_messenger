@@ -5,68 +5,67 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class ClientHandler extends Thread {
     private Socket clientSocket;
     private Set<String> connectedClients;
+    private Map<String, ClientHandler> clientHandlers;
     private String username;
+    private PrintWriter out;
+    private ClientHandler chatPartner;
 
-    // Map pour suivre les demandes de chat privé. 
-    // Clé = l'utilisateur qui a été invité, valeur = l'utilisateur qui a initié le chat privé.
-    private static Map<String, String> privateChatRequests = new HashMap<>();
-
-    public ClientHandler(Socket clientSocket, Set<String> connectedClients) {
+    public ClientHandler(Socket clientSocket, Set<String> connectedClients, Map<String, ClientHandler> clientHandlers) {
         this.clientSocket = clientSocket;
         this.connectedClients = connectedClients;
+        this.clientHandlers = clientHandlers;
     }
 
     @Override
     public void run() {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
 
             out.println("Veuillez entrer votre nom d'utilisateur :");
             username = in.readLine();
 
-            synchronized(connectedClients) {
+            synchronized (connectedClients) {
                 connectedClients.add(username);
+            }
+
+            synchronized (clientHandlers) {
+                clientHandlers.put(username, this);
             }
 
             String clientInput;
             while ((clientInput = in.readLine()) != null) {
                 if ("/list".equalsIgnoreCase(clientInput)) {
-                    synchronized(connectedClients) {
+                    synchronized (connectedClients) {
                         out.println(connectedClients.toString());
                     }
                 } else if (clientInput.startsWith("/private_chat")) {
-                    String targetUsername = clientInput.split(" ")[1];
-                    if (connectedClients.contains(targetUsername) && !username.equals(targetUsername)) {
-                        privateChatRequests.put(targetUsername, username);
-                        out.println("Demande de chat privé envoyée à " + targetUsername);
-                    } else {
-                        out.println("L'utilisateur n'est pas valide ou est le même que vous.");
-                    }
+                    String targetUser = clientInput.split(" ")[1];
+                    startPrivateChat(targetUser);
                 } else if (clientInput.startsWith("/accept")) {
                     String requester = clientInput.split(" ")[1];
-                    if (privateChatRequests.containsKey(username) && privateChatRequests.get(username).equals(requester)) {
-                        // Démarre le chat privé
-                        out.println("Chat privé démarré avec " + requester);
-                        // TODO: implémenter la logique pour gérer le chat privé ici
-                    } else {
-                        out.println("Aucune demande de chat privé de " + requester);
-                    }
+                    acceptPrivateChat(requester);
+                } else if (clientInput.equalsIgnoreCase("/decline")) {
+                    declinePrivateChat();
+                } else if (chatPartner != null) {
+                    chatPartner.out.println(username + ": " + clientInput);
                 }
-                // ... [gérer d'autres commandes comme nécessaire]
+                // TODO: Ajouter d'autres commandes selon les besoins
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            synchronized(connectedClients) {
+            synchronized (connectedClients) {
                 connectedClients.remove(username);
+            }
+            synchronized (clientHandlers) {
+                clientHandlers.remove(username);
             }
             try {
                 clientSocket.close();
@@ -75,7 +74,38 @@ public class ClientHandler extends Thread {
             }
         }
     }
+
+    private void startPrivateChat(String targetUser) {
+        ClientHandler targetHandler = clientHandlers.get(targetUser);
+        if (targetHandler != null && !targetUser.equals(username)) {
+            targetHandler.out.println(username + " souhaite démarrer un chat privé avec vous. Tapez /accept " + username
+                    + " pour accepter.");
+            chatPartner = targetHandler;
+            out.println("Demande de chat privé envoyée à " + targetUser);
+        } else {
+            out.println("Utilisateur non disponible pour le chat privé.");
+        }
+    }
+
+    private void acceptPrivateChat(String requester) {
+        ClientHandler requesterHandler = clientHandlers.get(requester);
+        if (requesterHandler != null && requesterHandler.chatPartner == this) {
+            chatPartner = requesterHandler;
+            chatPartner.out.println("Votre demande de chat privé avec " + username + " a été acceptée.");
+            out.println("Vous avez accepté le chat privé avec " + requester);
+        } else {
+            out.println("Pas de demande de chat privé en attente de " + requester);
+        }
+    }
+
+    private void declinePrivateChat() {
+        if (chatPartner != null) {
+            chatPartner.out.println(username + " a refusé votre demande de chat privé.");
+            chatPartner.chatPartner = null;
+            chatPartner = null;
+            out.println("Vous avez refusé le chat privé.");
+        } else {
+            out.println("Pas de demande de chat privé en attente.");
+        }
+    }
 }
-
-
-

@@ -9,12 +9,15 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
     private static final int INVALID_PORT_NUMBER = -1;
     private static boolean isServerRunning = true;
     private static boolean initialMessageDisplayed = false;
     private static Set<String> connectedClients = new HashSet<>();
+    private static Map<String, ClientHandler> clientHandlers = new HashMap<>();
 
     public static void main(String[] args) {
         validateArguments(args);
@@ -54,7 +57,7 @@ public class Server {
                     Socket clientSocket = serverSocket.accept();
                     printClientConnectedMessage(clientSocket);
 
-                    ClientHandler clientHandler = new ClientHandler(clientSocket, connectedClients);
+                    ClientHandler clientHandler = new ClientHandler(clientSocket, connectedClients, clientHandlers);
                     clientHandler.start();
                 } catch (java.net.SocketTimeoutException e) {
                     // Ignore
