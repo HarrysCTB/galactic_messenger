@@ -1,4 +1,4 @@
-package galactic_messenger;
+package galactic_messenger.server;
 
 import java.io.BufferedReader;
 import java.io.IOException;

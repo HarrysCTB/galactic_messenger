@@ -22,7 +22,7 @@ task clientJar(type: Jar) {
     archiveFileName.set("galactic_messenger_client.jar")
     destinationDirectory.set(file("../"))
     manifest {
-        attributes 'Main-Class': 'galactic_messenger.Client'
+        attributes 'Main-Class': 'galactic_messenger.client.Client'
     }
     from sourceSets.main.output
 }
@@ -31,7 +31,7 @@ task serverJar(type: Jar) {
     archiveFileName.set("galactic_messenger_server.jar")
     destinationDirectory.set(file("../"))
     manifest {
-        attributes 'Main-Class': 'galactic_messenger.Server'
+        attributes 'Main-Class': 'galactic_messenger.server.Server'
     }
     from sourceSets.main.output
 }
