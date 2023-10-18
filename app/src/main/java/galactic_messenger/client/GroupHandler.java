@@ -1,4 +1,4 @@
-package galactic_messenger;
+package galactic_messenger.client;
 
 import java.util.Set;
 import java.io.PrintWriter;

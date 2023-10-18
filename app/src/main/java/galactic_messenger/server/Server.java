@@ -1,4 +1,4 @@
-package galactic_messenger;
+package galactic_messenger.server;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +9,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
+
+import galactic_messenger.client.ClientHandler;
+
 import java.util.HashMap;
 import java.util.Map;
 
