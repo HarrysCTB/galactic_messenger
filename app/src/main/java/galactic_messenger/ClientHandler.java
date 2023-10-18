@@ -7,6 +7,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class ClientHandler extends Thread {
     private Socket clientSocket;
@@ -15,6 +17,13 @@ public class ClientHandler extends Thread {
     private String username;
     private PrintWriter out;
     private ClientHandler chatPartner;
+    private boolean inPrivateChat = false;
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_BLUE = "\u001B[34m";
+    public static Map<String, Set<ClientHandler>> chatGroups = new HashMap<>();
+    private GroupHandler groupHandler = new GroupHandler();
 
     public ClientHandler(Socket clientSocket, Set<String> connectedClients, Map<String, ClientHandler> clientHandlers) {
         this.clientSocket = clientSocket;
@@ -40,20 +49,48 @@ public class ClientHandler extends Thread {
 
             String clientInput;
             while ((clientInput = in.readLine()) != null) {
-                if ("/list".equalsIgnoreCase(clientInput)) {
+                if ("/online_users".equalsIgnoreCase(clientInput)) {
                     synchronized (connectedClients) {
-                        out.println(connectedClients.toString());
+                        out.println("[SERVER] : " + connectedClients.toString());
                     }
                 } else if (clientInput.startsWith("/private_chat")) {
-                    String targetUser = clientInput.split(" ")[1];
-                    startPrivateChat(targetUser);
+                    String[] commandParts = clientInput.split(" ");
+                    if (commandParts.length > 1) {
+                        String targetUser = commandParts[1];
+                        startPrivateChat(in, out, targetUser);
+                    }
                 } else if (clientInput.startsWith("/accept")) {
-                    String requester = clientInput.split(" ")[1];
-                    acceptPrivateChat(requester);
-                } else if (clientInput.equalsIgnoreCase("/decline")) {
-                    declinePrivateChat();
-                } else if (chatPartner != null) {
-                    chatPartner.out.println(username + ": " + clientInput);
+                    String[] commandParts = clientInput.split(" ");
+                    if (commandParts.length > 1) {
+                        String requester = commandParts[1];
+                        acceptPrivateChat(requester);
+                    }
+                } else if (clientInput.startsWith("/decline")) {
+                    String[] commandParts = clientInput.split(" ");
+                    if (commandParts.length > 1) {
+                        String requester = commandParts[1];
+                        declinePrivateChat(requester);
+                    } else {
+                        out.println(
+                                "Veuillez spécifier le nom de l'utilisateur dont vous souhaitez refuser la demande de chat.");
+                    }
+                } else if (inPrivateChat) {
+                    if (chatPartner != null) {
+                        if (clientInput.equalsIgnoreCase("/exit_private_chat")) {
+                            chatPartner.out.println(
+                                    getColorForUser(username) + username + ANSI_RESET + " a quitté le chat privé.");
+                            chatPartner = null; // Terminer la session de chat pour cet utilisateur
+                            out.println("Vous avez quitté le chat privé.");
+                        } else {
+                            chatPartner.out.println(getColorForUser(username) + username + ANSI_RESET + ": " + ANSI_BLUE
+                                    + clientInput + ANSI_RESET);
+                        }
+                    }
+                } else if (clientInput.startsWith("/create_group") ||
+                        clientInput.startsWith("/join_group") ||
+                        clientInput.startsWith("/exit_group") ||
+                        clientInput.startsWith("/msg_group")) {
+                    groupHandler.handleGroupCommands(clientInput, this);
                 }
                 // TODO: Ajouter d'autres commandes selon les besoins
             }
@@ -75,37 +112,83 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void startPrivateChat(String targetUser) {
+    private String getColorForUser(String username) {
+        // For this demo, I'm simply alternating between two colors.
+        // A more advanced system could use a map of usernames to colors, or other
+        // criteria.
+        return username.hashCode() % 2 == 0 ? ANSI_RED : ANSI_GREEN;
+    }
+
+    private void startPrivateChat(BufferedReader in, PrintWriter out, String targetUser) throws IOException {
         ClientHandler targetHandler = clientHandlers.get(targetUser);
-        if (targetHandler != null && !targetUser.equals(username)) {
+
+        if (targetHandler != null && targetHandler != this) {
+            // Send chat request to target user
             targetHandler.out.println(username + " souhaite démarrer un chat privé avec vous. Tapez /accept " + username
                     + " pour accepter.");
-            chatPartner = targetHandler;
-            out.println("Demande de chat privé envoyée à " + targetUser);
+            this.out.println("Demande de chat privé envoyée à " + targetUser);
+            targetHandler.chatPartner = this; // Set the chatPartner for targetUser when a request is sent
+            // System.out.println("DEBUG: " + username + " set " + targetUser + " as
+            // chatPartner");
         } else {
-            out.println("Utilisateur non disponible pour le chat privé.");
+            out.println("Utilisateur cible non trouvé ou invalide.");
         }
     }
 
     private void acceptPrivateChat(String requester) {
         ClientHandler requesterHandler = clientHandlers.get(requester);
-        if (requesterHandler != null && requesterHandler.chatPartner == this) {
+
+        // System.out.println("DEBUG: Current user (" + username + ") trying to accept
+        // chat with " + requester);
+        // if (requesterHandler != null) {
+        // System.out.println("DEBUG: " + requester + "'s chatPartner is "
+        // + (requesterHandler.chatPartner == null ? "null" :
+        // requesterHandler.chatPartner.username));
+        // }
+
+        if (requesterHandler != null && requesterHandler == this.chatPartner) {
             chatPartner = requesterHandler;
+            requesterHandler.chatPartner = this;
+            inPrivateChat = true;
+            chatPartner.inPrivateChat = true;
             chatPartner.out.println("Votre demande de chat privé avec " + username + " a été acceptée.");
-            out.println("Vous avez accepté le chat privé avec " + requester);
+            out.println("Vous êtes maintenant en chat privé. Tapez /private_chat_exit pour quitter.");
         } else {
             out.println("Pas de demande de chat privé en attente de " + requester);
         }
     }
 
-    private void declinePrivateChat() {
-        if (chatPartner != null) {
+    private void declinePrivateChat(String requester) {
+        if (chatPartner != null && chatPartner.username.equals(requester)) {
             chatPartner.out.println(username + " a refusé votre demande de chat privé.");
             chatPartner.chatPartner = null;
             chatPartner = null;
-            out.println("Vous avez refusé le chat privé.");
+            out.println("Vous avez refusé la demande de chat privé de " + requester + ".");
         } else {
-            out.println("Pas de demande de chat privé en attente.");
+            out.println("Pas de demande de chat privé en attente de " + requester + ".");
         }
     }
+
+    public PrintWriter getOut() {
+        return out;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public static synchronized void addToChatGroup(String groupName, ClientHandler clientHandler) {
+        chatGroups.computeIfAbsent(groupName, k -> new HashSet<>()).add(clientHandler);
+    }
+
+    public static synchronized void removeFromChatGroup(String groupName, ClientHandler clientHandler) {
+        if (chatGroups.containsKey(groupName)) {
+            chatGroups.get(groupName).remove(clientHandler);
+        }
+    }
+
+    public static synchronized Set<ClientHandler> getMembersOfChatGroup(String groupName) {
+        return chatGroups.get(groupName);
+    }
+
 }

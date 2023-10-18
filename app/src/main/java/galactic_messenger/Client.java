@@ -8,23 +8,11 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-/**
- * Client connection class for the galactic messenger.
- * This class handles client-server connection and user interactions.
- */
 public class Client {
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_RED = "\u001B[31m";
     private static final String ANSI_GREEN = "\u001B[32m";
-    private static final String ANSI_BLUE = "\u001B[34m";
 
-    /**
-     * Check if the server is available and accept connections.
-     *
-     * @param serverIP   - IP address of the server
-     * @param serverPort - Port number to connect
-     * @return true if the connection is successful, false otherwise
-     */
     public boolean checkServerLogin(String serverIP, int serverPort) {
         try (Socket socket = new Socket(serverIP, serverPort)) {
             System.out.println(ANSI_GREEN + "CONNEXION SUCCESS" + ANSI_RESET);
@@ -45,122 +33,35 @@ public class Client {
         }
     }
 
-    /**
-     * Start a client session and handle user interactions.
-     */
     public void startClientSession(String serverIP, int serverPort) {
-        try (BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))) {
-            while (true) {
-                System.out.print(ANSI_BLUE + "Entrez une commande (/register, /login, /help): " + ANSI_RESET);
-                String command = userInput.readLine();
-
-                switch (command) {
-                    case "/register":
-                        register();
-                        break;
-                    case "/login":
-                        login(serverIP, serverPort);
-                        break;
-                    case "/help":
-                        displayHelp();
-                        break;
-                    case "/exit":
-                        return;
-                    default:
-                        System.out.println("Commande inconnue. Essayez /help pour voir les commandes disponibles.");
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Erreur lors de la lecture de la commande utilisateur.");
-        }
-    }
-
-    private void register() {
-        // Code to handle registration
-        System.out.println("Fonction d'inscription à implémenter.");
-    }
-
-    private void login(String serverIP, int serverPort) {
         try (Socket socket = new Socket(serverIP, serverPort);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in))) {
 
+            Thread readThread = new Thread(() -> {
+                try {
+                    String serverResponse;
+                    while ((serverResponse = in.readLine()) != null) {
+                        System.out.println(serverResponse);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            readThread.start();
+
             System.out.println(in.readLine()); // "Veuillez entrer votre nom d'utilisateur :"
             String username = userInput.readLine();
             out.println(username);
 
-            String serverResponse;
             String command;
-            while (true) {
-                System.out.print("Entrez une commande: ");
-                command = userInput.readLine();
-                out.println(command); // Send command to the server
-
-                switch (command.split(" ")[0].toLowerCase()) {
-                    case "/list":
-                        System.out.println("Clients connectés: " + in.readLine());
-                        break;
-
-                    case "/private_chat":
-                        serverResponse = in.readLine();
-                        System.out.println(serverResponse);
-                        break;
-
-                    case "/accept":
-                        serverResponse = in.readLine();
-                        if ("Chat privé démarré.".equals(serverResponse)) {
-                            startPrivateChat(in, out, userInput);
-                        } else {
-                            System.out.println(serverResponse);
-                        }
-                        break;
-
-                    case "/decline":
-                        serverResponse = in.readLine();
-                        System.out.println(serverResponse);
-                        break;
-
-                    default:
-                        System.out.println("Commande inconnue. Essayez /help pour voir les commandes disponibles.");
-                }
+            while ((command = userInput.readLine()) != null) {
+                out.println(command);
             }
         } catch (IOException e) {
             System.out.println("Erreur lors de la communication avec le serveur.");
         }
-    }
-
-    private void startPrivateChat(BufferedReader in, PrintWriter out, BufferedReader userInput) throws IOException {
-        System.out.println("Vous êtes maintenant en chat privé. Tapez /private_chat_exit pour quitter.");
-
-        String serverResponse;
-        String message;
-        while (true) {
-            System.out.print("Message privé: ");
-            message = userInput.readLine();
-            out.println(message); // Envoyez le message au serveur pour qu'il le transmette à l'autre utilisateur
-
-            serverResponse = in.readLine(); // Recevez un message de l'autre utilisateur dans le chat privé
-
-            if (serverResponse == null || "L'utilisateur s'est déconnecté".equals(serverResponse)) {
-                System.out.println(serverResponse);
-                break;
-            }
-
-            if ("/private_chat_exit".equalsIgnoreCase(message)) {
-                System.out.println("Vous avez quitté le chat privé.");
-                break;
-            } else {
-                System.out.println(serverResponse);
-            }
-        }
-    }
-
-    private void displayHelp() {
-        System.out.println("/register : S'inscrire comme nouvel utilisateur");
-        System.out.println("/login    : Se connecter avec un compte existant");
-        System.out.println("/help     : Afficher cette aide");
-        System.out.println("/exit     : Quitter l'application");
     }
 
     public static void main(String[] args) {
