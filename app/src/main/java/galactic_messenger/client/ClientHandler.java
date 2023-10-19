@@ -92,6 +92,8 @@ public class ClientHandler extends Thread {
                 } else if (clientInput.startsWith("/create_group") ||
                         clientInput.startsWith("/join_group") ||
                         clientInput.startsWith("/exit_group") ||
+                        clientInput.startsWith("/create_secure_group") ||
+                        clientInput.startsWith("/join_secure_group") ||
                         clientInput.startsWith("/msg_group")) {
                     groupHandler.handleGroupCommands(clientInput, this);
                 }
