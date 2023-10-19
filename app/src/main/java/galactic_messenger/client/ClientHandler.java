@@ -22,7 +22,10 @@ public class ClientHandler extends Thread {
     private static final String ANSI_RED = "\u001B[31m";
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_BLUE = "\u001B[34m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+
     public static Map<String, Set<ClientHandler>> chatGroups = new HashMap<>();
+    public static Map<String, String> groupPasswords = new HashMap<>();
     private GroupHandler groupHandler = new GroupHandler();
 
     public ClientHandler(Socket clientSocket, Set<String> connectedClients, Map<String, ClientHandler> clientHandlers) {
@@ -51,7 +54,7 @@ public class ClientHandler extends Thread {
             while ((clientInput = in.readLine()) != null) {
                 if ("/online_users".equalsIgnoreCase(clientInput)) {
                     synchronized (connectedClients) {
-                        out.println("[SERVER] : " + connectedClients.toString());
+                        out.println(ANSI_GREEN + "[SERVER] : " + connectedClients.toString() + ANSI_RESET);
                     }
                 } else if (clientInput.startsWith("/private_chat")) {
                     String[] commandParts = clientInput.split(" ");
@@ -79,11 +82,11 @@ public class ClientHandler extends Thread {
                         if (clientInput.equalsIgnoreCase("/exit_private_chat")) {
                             chatPartner.out.println(
                                     getColorForUser(username) + username + ANSI_RESET + " a quitté le chat privé.");
-                            chatPartner = null; // Terminer la session de chat pour cet utilisateur
                             out.println("Vous avez quitté le chat privé.");
+                            chatPartner.inPrivateChat = false;
+                            inPrivateChat = false;
                         } else {
-                            chatPartner.out.println(getColorForUser(username) + username + ANSI_RESET + ": " + ANSI_BLUE
-                                    + clientInput + ANSI_RESET);
+                            sendMessageToChatPartner(chatPartner, clientInput);
                         }
                     }
                 } else if (clientInput.startsWith("/create_group") ||
@@ -110,6 +113,11 @@ public class ClientHandler extends Thread {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void sendMessageToChatPartner(ClientHandler partner, String message) {
+        partner.out
+                .println(getColorForUser(username) + username + ANSI_RESET + ": " + ANSI_BLUE + message + ANSI_RESET);
     }
 
     private String getColorForUser(String username) {
@@ -191,4 +199,15 @@ public class ClientHandler extends Thread {
         return chatGroups.get(groupName);
     }
 
+    public static synchronized Set<String> getAllGroupNames() {
+        return new HashSet<>(chatGroups.keySet());
+    }
+
+    public static synchronized void setGroupPassword(String groupName, String password) {
+        groupPasswords.put(groupName, password);
+    }
+
+    public static synchronized String getGroupPassword(String groupName) {
+        return groupPasswords.get(groupName);
+    }
 }

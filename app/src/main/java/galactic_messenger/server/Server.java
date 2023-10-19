@@ -54,7 +54,7 @@ public class Server {
 
             while (isServerRunning) {
                 try {
-                    serverSocket.setSoTimeout(1000);
+                    // serverSocket.setSoTimeout(1000);
                     displayWaitingForClientConnection();
 
                     Socket clientSocket = serverSocket.accept();
