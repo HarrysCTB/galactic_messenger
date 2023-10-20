@@ -40,7 +40,7 @@ public class Client {
 
                     // Attendez la réponse du serveur
                     String serverResponse = in.readLine();
-                    System.out.println("Server response: " + serverResponse);
+                    System.out.println(Color.colorize("[Server]: " + serverResponse, Color.BLUE));
                 }
             }
         } catch (UnknownHostException e) {
