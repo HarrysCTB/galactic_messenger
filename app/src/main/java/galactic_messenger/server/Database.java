@@ -43,31 +43,52 @@ public class Database {
         }
     }
 
-    public boolean registerUser(String username, String password) {
+    public String registerUser(String username, String password) {
+        if (userExists(username)) {
+            return "Registration failed: User already exists.";
+        }
+
         try {
             PreparedStatement stmt = conn.prepareStatement(
                     "INSERT INTO users (username, password) VALUES (?, ?)");
             stmt.setString(1, username);
             stmt.setString(2, password);
             stmt.executeUpdate();
-            return true;
+            return "Registration successful.";
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Registration failed: SQL error.";
+        }
+    }
+
+    public boolean userExists(String username) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    public boolean authenticateUser(String username, String password) {
+    public String loginUser(String username, String password) {
         try {
             PreparedStatement stmt = conn.prepareStatement(
                     "SELECT * FROM users WHERE username = ? AND password = ?");
             stmt.setString(1, username);
             stmt.setString(2, password);
             ResultSet rs = stmt.executeQuery();
-            return rs.next();
+
+            if (rs.next()) {
+                return "Login successful.";
+            } else {
+                return "Login failed: User not found or incorrect credentials.";
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            return "Login failed: SQL error.";
         }
     }
 }

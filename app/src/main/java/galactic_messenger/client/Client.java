@@ -8,7 +8,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import galactic_messenger.utils.ValidationUtils;
-import galactic_messenger.utils.Color; // Importez la classe Color ici
+import galactic_messenger.utils.Color;
 
 public class Client {
     public static void main(String[] args) {
@@ -29,6 +29,8 @@ public class Client {
 
             displayWelcomeMessage();
 
+            ServerHandler serverHandler = new ServerHandler();
+
             while (true) {
                 System.out.print("Enter a command: ");
                 String command = userInput.readLine();
@@ -40,7 +42,7 @@ public class Client {
 
                     // Attendez la réponse du serveur
                     String serverResponse = in.readLine();
-                    System.out.println(Color.colorize("[Server]: " + serverResponse, Color.BLUE));
+                    serverHandler.handleServerResponse(serverResponse);
                 }
             }
         } catch (UnknownHostException e) {

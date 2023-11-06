@@ -44,11 +44,7 @@ public class ClientHandler implements Runnable {
                 if (parts.length == 3) {
                     String username = parts[1];
                     String hashedPassword = parts[2];
-                    if (database.registerUser(username, hashedPassword)) {
-                        return "Registration successful.";
-                    } else {
-                        return "Registration failed.";
-                    }
+                    return database.registerUser(username, hashedPassword);
                 } else {
                     return "Invalid command format.";
                 }
@@ -56,11 +52,7 @@ public class ClientHandler implements Runnable {
                 if (parts.length == 3) {
                     String username = parts[1];
                     String hashedPassword = parts[2];
-                    if (database.authenticateUser(username, hashedPassword)) {
-                        return "Login successful.";
-                    } else {
-                        return "Login failed.";
-                    }
+                    return database.loginUser(username, hashedPassword);
                 } else {
                     return "Invalid command format.";
                 }
