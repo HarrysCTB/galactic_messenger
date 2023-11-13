@@ -1,4 +1,3 @@
-// Database.java
 package galactic_messenger.server;
 
 import java.sql.Connection;
@@ -10,8 +9,6 @@ import java.sql.SQLException;
 public class Database {
     private static final String DB_URL = "jdbc:sqlite:app/database/galactic_messenger.db";
 
-    private Connection conn;
-
     static {
         try {
             Class.forName("org.sqlite.JDBC");
@@ -21,22 +18,20 @@ public class Database {
     }
 
     public Database() {
-        try {
-            conn = DriverManager.getConnection(DB_URL);
-            createTables();
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            createTables(conn);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    private void createTables() {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "CREATE TABLE IF NOT EXISTS users (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "username TEXT NOT NULL UNIQUE," +
-                            "password TEXT NOT NULL" +
-                            ")");
+    private void createTables(Connection conn) {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "CREATE TABLE IF NOT EXISTS users (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "username TEXT NOT NULL UNIQUE," +
+                        "password TEXT NOT NULL" +
+                        ")")) {
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -48,9 +43,9 @@ public class Database {
             return "Registration failed: User already exists.";
         }
 
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO users (username, password) VALUES (?, ?)");
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement stmt = conn.prepareStatement(
+                     "INSERT INTO users (username, password) VALUES (?, ?)")) {
             stmt.setString(1, username);
             stmt.setString(2, password);
             stmt.executeUpdate();
@@ -62,8 +57,8 @@ public class Database {
     }
 
     public boolean userExists(String username) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?")) {
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
             return rs.next();
@@ -74,9 +69,9 @@ public class Database {
     }
 
     public String loginUser(String username, String password) {
-        try {
-            PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT * FROM users WHERE username = ? AND password = ?");
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT * FROM users WHERE username = ? AND password = ?")) {
             stmt.setString(1, username);
             stmt.setString(2, password);
             ResultSet rs = stmt.executeQuery();

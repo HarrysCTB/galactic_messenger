@@ -6,11 +6,26 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import galactic_messenger.utils.ValidationUtils;
 import galactic_messenger.utils.Color;
 
 public class Server {
+    private static final Map<String, ClientHandler> clientHandlers = new ConcurrentHashMap<>();
+
+    public static void addClientHandler(String username, ClientHandler clientHandler) {
+        clientHandlers.put(username, clientHandler);
+    }
+
+    public static void removeClientHandler(String username) {
+        clientHandlers.remove(username);
+    }
+
+    public static ClientHandler getClientHandler(String username) {
+        return clientHandlers.get(username);
+    }
     public static void main(String[] args) throws ClassNotFoundException {
         if (args.length != 1) {
             System.err.println(Color.colorize("Usage: java -jar galactic_messenger_server.jar [port]", Color.RED));

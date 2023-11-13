@@ -1,12 +1,21 @@
 package galactic_messenger.client;
 
-import galactic_messenger.utils.Color;
+import galactic_messenger.utils.StyledMessage;
+import java.awt.*;
+
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class CommandHandler {
-    public static String handleCommand(String command) {
+
+    private ServerResponseListener responseListener;
+
+    public CommandHandler(ServerResponseListener responseListener) {
+        this.responseListener = responseListener;
+    }
+
+    public String handleCommand(String command) {
         String[] parts = command.split(" ", 2);
         String action = parts[0].toLowerCase();
 
@@ -20,22 +29,22 @@ public class CommandHandler {
                 break;
             case "/exit":
                 handleExitCommand();
-                break;
+                return null;
             default:
-                System.out.println(Color.colorize("Unknown command: " + action, Color.RED));
+            responseListener.updateChat(new StyledMessage("CoH Unknown command: " + action, Color.RED));
         }
         return null;
     }
 
-    private static String handleRegisterCommand(String[] parts) {
+    private String handleRegisterCommand(String[] parts) {
         if (parts.length != 2) {
-            System.out.println(Color.colorize("Usage: /register <username> <password>", Color.RED));
+            responseListener.updateChat(new StyledMessage("Usage: /register <username> <password>", Color.CYAN));
             return null;
         }
 
         String[] registrationInfo = parts[1].split(" ");
         if (registrationInfo.length != 2) {
-            System.out.println(Color.colorize("Usage: /register <username> <password>", Color.RED));
+            responseListener.updateChat(new StyledMessage("Usage: /register <username> <password>", Color.CYAN));
             return null;
         }
 
@@ -47,23 +56,22 @@ public class CommandHandler {
 
             return "/register " + username + " " + hashedPassword;
         } else {
-            System.out.println(Color.colorize("Invalid username or password. Rules:\n" +
+            responseListener.updateChat(new StyledMessage("Invalid username or password. Rules:\n" +
                     "Username must be 3-20 characters long and can only contain letters and numbers.\n" +
-                    "Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
-                    Color.RED));
+                    "Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.", Color.CYAN));
             return null;
         }
     }
 
-    private static String handleLoginCommand(String[] parts) {
+    private String handleLoginCommand(String[] parts) {
         if (parts.length != 2) {
-            System.out.println(Color.colorize("Usage: /login <username> <password>", Color.RED));
+            responseListener.updateChat(new StyledMessage("Usage: /login <username> <password>", Color.CYAN));
             return null;
         }
 
         String[] loginInfo = parts[1].split(" ");
         if (loginInfo.length != 2) {
-            System.out.println(Color.colorize("Usage: /login <username> <password>", Color.RED));
+            responseListener.updateChat(new StyledMessage("Usage: /login <username> <password>", Color.CYAN));
             return null;
         }
 
@@ -75,7 +83,8 @@ public class CommandHandler {
         return "/login " + username + " " + hashedPassword;
     }
 
-    private static void handleHelpCommand() {
+    private void handleHelpCommand() {
+        StringBuilder helpMessage = new StringBuilder("Available commands:\n");
         String[][] commandList = {
                 { "/register <username> <password>", "Register a new user" },
                 { "/login <username> <password>", "Login as an existing user" },
@@ -84,15 +93,18 @@ public class CommandHandler {
                 // Ajoutez ici d'autres commandes et leurs descriptions
         };
 
-        System.out.println("Available commands:");
         for (String[] commandInfo : commandList) {
-            System.out.println(Color.colorize(commandInfo[0], Color.CYAN) + " - " + commandInfo[1]);
+            helpMessage.append(commandInfo[0]).append(" - ").append(commandInfo[1]).append("\n");
         }
+
+        responseListener.updateChat(new StyledMessage(helpMessage.toString(), Color.CYAN));
     }
 
-    private static void handleExitCommand() {
-        System.out.println(Color.colorize("Live long and prosper 🖖", Color.BLUE));
-        System.exit(0);
+    private void handleExitCommand() {
+        responseListener.updateChat(new StyledMessage("Live long and prosper 🖖", Color.CYAN));
+        if (responseListener instanceof Client) {
+            ((Client) responseListener).exitApplication();
+        }
     }
 
     private static boolean isValidUsername(String username) {
